@@ -269,10 +269,10 @@ export default function Panel() {
                         {/* Pending Orders */}
                         <div className="bg-orange-50 p-6 rounded-xl border border-orange-100">
                             <h2 className="text-2xl font-bold text-orange-800 mb-4 flex items-center gap-2">
-                                <i className="fa-solid fa-bell"></i> Bekleyen (Yeni) Siparişler
+                                <i className="fa-solid fa-bell"></i>Yeni Siparişler
                             </h2>
                             {adminData.pendingOrders.filter((o:any) => o.status === 'bekliyor').length === 0 ? (
-                                <p className="text-orange-600 font-medium">Şu an bekleyen yeni sipariş yok.</p>
+                                <p className="text-orange-600 font-medium">Şu an sipariş yok.</p>
                             ) : (
                                 <div className="space-y-4">
                                     {adminData.pendingOrders.filter((o:any) => o.status === 'bekliyor').map((order: any) => (
@@ -294,8 +294,8 @@ export default function Panel() {
                                                 </div>
                                             </ul>
                                             <div className="flex gap-2">
-                                                <button onClick={() => handleAction('approve_order', { orderId: order.id })} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-bold">Mutfağa İlet (Onayla)</button>
-                                                <button onClick={() => { if(window.confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) handleAction('cancel_order', { orderId: order.id }) }} className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-bold">Troll/İptal Et</button>
+                                                <button onClick={() => handleAction('approve_order', { orderId: order.id })} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-bold">Onayla</button>
+                                                <button onClick={() => { if(window.confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) handleAction('cancel_order', { orderId: order.id }) }} className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-bold">İptal Et</button>
                                             </div>
                                         </div>
                                     ))}

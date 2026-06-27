@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Pusher from 'pusher-js';
 
 export default function Panel() {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -17,30 +18,17 @@ export default function Panel() {
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
 
-    // Order/Table States
     const [adminData, setAdminData] = useState<any>(null);
-    const initialLoadRef = useRef(true);
-    const prevOrdersRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         if (adminData && adminData.pendingOrders) {
-            const currentPending = adminData.pendingOrders.filter((o:any) => o.status === 'bekliyor');
-            
-            if (!initialLoadRef.current) {
-                const hasNewOrder = currentPending.some((o:any) => !prevOrdersRef.current.has(o.id));
-                if (hasNewOrder) {
-                    const vol = parseFloat(localStorage.getItem('volume') || '1');
-                    if (vol > 0) {
-                        const audio = new Audio('/notification.mp3');
-                        audio.volume = vol;
-                        audio.play().catch(e => console.log('Audio play error:', e));
-                    }
-                }
+            // Sadece başlık bilgisini güncelle (opsiyonel)
+            const pendingCount = adminData.pendingOrders.filter((o:any) => o.status === 'bekliyor').length;
+            if (pendingCount > 0) {
+                document.title = `(${pendingCount}) Yeni Sipariş! - Aspava`;
             } else {
-                initialLoadRef.current = false;
+                document.title = 'SB Aspava Panel';
             }
-            
-            prevOrdersRef.current = new Set(currentPending.map((o:any) => o.id));
         }
     }, [adminData]);
 
@@ -97,7 +85,26 @@ export default function Panel() {
         if (isAuthenticated) {
             fetchMenu();
             fetchAdminData();
-            // Web Worker ile arka planda yavaşlamayan polling
+            
+            // Pusher WebSocket Entegrasyonu
+            const pusher = new Pusher('02d39ab666eca7e30f1c', {
+                cluster: 'eu'
+            });
+
+            const channel = pusher.subscribe('admin-channel');
+            channel.bind('new-order', function(data: any) {
+                // Sesi çal
+                const vol = parseFloat(localStorage.getItem('volume') || '1');
+                if (vol > 0) {
+                    const audio = new Audio('/notification.mp3');
+                    audio.volume = vol;
+                    audio.play().catch(()=>{});
+                }
+                // Verileri yenile
+                fetchAdminData();
+            });
+
+            // Web Worker ile arka planda yavaşlamayan polling (Yedek)
             const worker = new Worker('/worker.js');
             worker.onmessage = (e) => {
                 if (e.data === 'tick') {
@@ -114,6 +121,7 @@ export default function Panel() {
                 setVolume(parseFloat(localStorage.getItem('volume')!));
             }
             return () => {
+                pusher.unsubscribe('admin-channel');
                 worker.postMessage('stop');
                 worker.terminate();
             };

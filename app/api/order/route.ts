@@ -28,6 +28,23 @@ export async function POST(request: Request) {
 
         await redis.set('aspava:tables', db);
 
+        // Trigger real-time push to admin panel
+        try {
+            const Pusher = require('pusher');
+            const pusher = new Pusher({
+                appId: "2171329",
+                key: "02d39ab666eca7e30f1c",
+                secret: "f101cb1063445ab39be8",
+                cluster: "eu",
+                useTLS: true
+            });
+            await pusher.trigger("admin-channel", "new-order", {
+                orderId: newOrder.id
+            });
+        } catch (err) {
+            console.error("Pusher error:", err);
+        }
+
         return NextResponse.json({ success: true, orderId: newOrder.id });
 
     } catch (error) {

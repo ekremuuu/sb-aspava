@@ -295,7 +295,7 @@ export default function Panel() {
                                             </ul>
                                             <div className="flex gap-2">
                                                 <button onClick={() => handleAction('approve_order', { orderId: order.id })} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-bold">Mutfağa İlet (Onayla)</button>
-                                                <button onClick={() => handleAction('cancel_order', { orderId: order.id })} className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-bold">Troll/İptal Et</button>
+                                                <button onClick={() => { if(window.confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) handleAction('cancel_order', { orderId: order.id }) }} className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-bold">Troll/İptal Et</button>
                                             </div>
                                         </div>
                                     ))}
@@ -353,7 +353,7 @@ export default function Panel() {
                                                                         {order.status === 'onaylandi' && (
                                                                             <button onClick={() => handleAction('update_table_order', { tableId, orderId: order.id, status: 'hazir' })} className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded font-bold shadow-sm">Hazır (Servis Edildi)</button>
                                                                         )}
-                                                                        <button onClick={() => handleAction('update_table_order', { tableId, orderId: order.id, status: 'iptal' })} className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded font-bold shadow-sm">İptal Et</button>
+                                                                        <button onClick={() => { if(window.confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) handleAction('update_table_order', { tableId, orderId: order.id, status: 'iptal' }) }} className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded font-bold shadow-sm">İptal Et</button>
                                                                     </div>
                                                                 )}
                                                             </div>

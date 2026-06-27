@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import fs from 'fs';
-import path from 'path';
-
-const dataFilePath = path.join(process.cwd(), 'data', 'menu.json');
+import { redis } from '@/lib/redis';
 
 export async function GET() {
     try {
-        const fileContent = fs.readFileSync(dataFilePath, 'utf8');
-        const menuData = JSON.parse(fileContent);
+        let menuData = await redis.get('aspava:menu');
+        if (!menuData) menuData = {}; // Varsayılan boş veya seed data kullanabiliriz
         return NextResponse.json(menuData);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to read menu data' }, { status: 500 });
@@ -22,7 +19,7 @@ export async function POST(request: Request) {
 
     try {
         const newMenuData = await request.json();
-        fs.writeFileSync(dataFilePath, JSON.stringify(newMenuData, null, 2), 'utf8');
+        await redis.set('aspava:menu', newMenuData);
         return NextResponse.json({ success: true });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to write menu data' }, { status: 500 });

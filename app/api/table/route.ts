@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-
-const dbPath = path.join(process.cwd(), 'data', 'tables.json');
+import { redis } from '@/lib/redis';
 
 function generateUUID() {
     return 'sess_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
@@ -11,7 +8,12 @@ function generateUUID() {
 export async function POST(request: Request) {
     try {
         const { tableId, sessionId } = await request.json();
-        const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        let db: any = await redis.get('aspava:tables');
+        
+        if (!db || !db.tables) {
+            db = { tables: {} };
+            for(let i=1; i<=10; i++) db.tables[i.toString()] = { sessionId: null, orders: [] };
+        }
 
         if (!db.tables[tableId]) {
             return NextResponse.json({ error: 'Masa bulunamadı' }, { status: 404 });
@@ -22,7 +24,7 @@ export async function POST(request: Request) {
             const newSession = generateUUID();
             db.tables[tableId].sessionId = newSession;
             db.tables[tableId].orders = [];
-            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+            await redis.set('aspava:tables', db);
             return NextResponse.json({ success: true, joinedSessionId: newSession });
         }
 

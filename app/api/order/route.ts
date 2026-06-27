@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-
-const dbPath = path.join(process.cwd(), 'data', 'tables.json');
+import { redis } from '@/lib/redis';
 
 export async function POST(request: Request) {
     try {
         const { tableId, sessionId, items } = await request.json();
-        const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        const db: any = await redis.get('aspava:tables');
+        
+        if (!db || !db.tables) return NextResponse.json({ error: 'DB error' }, { status: 500 });
 
         if (!db.tables[tableId] || db.tables[tableId].sessionId !== sessionId) {
             return NextResponse.json({ error: 'Yetkisiz erişim veya masa kapanmış' }, { status: 403 });
@@ -24,7 +23,7 @@ export async function POST(request: Request) {
         db.tables[tableId].orders.push(newOrder);
         db.pendingOrders.push(newOrder);
 
-        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+        await redis.set('aspava:tables', db);
 
         return NextResponse.json({ success: true, orderId: newOrder.id });
 

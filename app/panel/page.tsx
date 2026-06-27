@@ -147,11 +147,15 @@ export default function Panel() {
     };
 
     const handleAction = async (action: string, data: any) => {
-        await fetch('/api/admin', {
+        const res = await fetch('/api/admin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action, ...data })
         });
+        const json = await res.json();
+        if (json.error) {
+            alert(json.error);
+        }
         fetchAdminData();
     };
 
@@ -364,12 +368,25 @@ export default function Panel() {
                                                         ))}
                                                         {table.orders.length === 0 && <span className="text-sm text-gray-400">Henüz sipariş yok. Menüye bakıyorlar...</span>}
                                                     </div>
-                                                    <button 
-                                                        onClick={() => { if(confirm(`Masa ${tableId} adisyonunu kapatmak istediğine emin misin?`)) handleAction('close_table', { tableId }) }}
-                                                        className="w-full bg-gray-800 text-white font-bold py-2 rounded-lg hover:bg-gray-900"
-                                                    >
-                                                        Adisyonu Kapat
-                                                    </button>
+                                                    <div className="flex gap-2">
+                                                        <button 
+                                                            onClick={() => {
+                                                                const target = prompt(`Masa ${tableId} hangi masaya taşınsın? (1-10 arası bir masa numarası giriniz)`);
+                                                                if(target && target !== tableId) {
+                                                                    handleAction('move_table', { fromTableId: tableId, toTableId: target });
+                                                                }
+                                                            }}
+                                                            className="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                                                        >
+                                                            Masayı Taşı
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => { if(confirm(`Masa ${tableId} adisyonunu kapatmak istediğine emin misin?`)) handleAction('close_table', { tableId }) }}
+                                                            className="flex-1 bg-gray-800 text-white font-bold py-2 rounded-lg hover:bg-gray-900 transition-colors shadow-sm"
+                                                        >
+                                                            Adisyonu Kapat
+                                                        </button>
+                                                    </div>
                                                 </>
                                             )}
                                         </div>

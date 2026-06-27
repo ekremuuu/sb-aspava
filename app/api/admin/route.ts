@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     if (!auth || auth.value !== 'true') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
-        const { action, tableId, orderId, status } = await request.json();
+        const { action, tableId, orderId, status, fromTableId, toTableId } = await request.json();
         let db: any = await redis.get('aspava:tables');
         if (!db) return NextResponse.json({ error: 'DB error' }, { status: 500 });
         if (!db.pendingOrders) db.pendingOrders = [];
@@ -34,6 +34,29 @@ export async function POST(request: Request) {
             db.tables[tableId].orders = [];
             // Remove pending orders for this table
             db.pendingOrders = db.pendingOrders.filter((o: any) => o.tableId !== tableId);
+        } else if (action === 'move_table' && fromTableId && toTableId) {
+            if (db.tables[fromTableId] && db.tables[toTableId]) {
+                if (db.tables[toTableId].sessionId) {
+                    return NextResponse.json({ error: 'Hedef masa şu anda dolu! Önce hedef masayı kapatın.' }, { status: 400 });
+                }
+                // Copy session and orders
+                db.tables[toTableId].sessionId = db.tables[fromTableId].sessionId;
+                db.tables[toTableId].orders = db.tables[fromTableId].orders;
+                
+                // Clear old table
+                db.tables[fromTableId].sessionId = null;
+                db.tables[fromTableId].orders = [];
+                
+                // Update pending orders tableId
+                db.pendingOrders = db.pendingOrders.map((o: any) => {
+                    if (o.tableId === fromTableId) {
+                        return { ...o, tableId: toTableId };
+                    }
+                    return o;
+                });
+            } else {
+                return NextResponse.json({ error: 'Geçersiz masa numarası.' }, { status: 400 });
+            }
         } else if (action === 'approve_order' && orderId) {
             const po = db.pendingOrders.find((o: any) => o.id === orderId);
             if (po) po.status = 'onaylandi';

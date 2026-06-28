@@ -140,18 +140,38 @@ export default function Panel() {
 
             const channel = pusher.subscribe('admin-channel');
             channel.bind('new-order', function(data: any) {
-                // Verileri yenile (Ses zaten useEffect tarafından otomatik çalınacak)
-                fetchAdminData();
-                // Siparişi yazdır (Yazıcı Sunucusuna Gönder)
-                if (data && data.tableId && data.items) {
-                    try {
-                        fetch('http://localhost:8181/print', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ tableId: data.tableId, items: data.items, orderId: data.orderId })
-                        }).catch(() => {});
-                    } catch (e) { }
-                }
+                // Eğer canlı sunucu eski versiyonsa (sadece orderId gönderiyorsa) veritabanından çekip yazdıralım
+                fetch('/api/admin')
+                    .then(res => res.json())
+                    .then(db => {
+                        setAdminData(db); // Verileri yenile
+                        
+                        // Fiş yazdırma işlemi
+                        if (data && data.tableId && data.items) {
+                            // Yeni versiyon Vercel (beta) payload'u
+                            fetch('http://localhost:8181/print', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ tableId: data.tableId, items: data.items, orderId: data.orderId })
+                            }).catch(() => {});
+                        } else if (data && data.orderId) {
+                            // Eski versiyon Vercel (main) payload'u
+                            let order = db.pendingOrders?.find((o: any) => o.id === data.orderId);
+                            if (!order && db.tables) {
+                                for (const tId in db.tables) {
+                                    const o = db.tables[tId].orders.find((o: any) => o.id === data.orderId);
+                                    if (o) { order = o; break; }
+                                }
+                            }
+                            if (order) {
+                                fetch('http://localhost:8181/print', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ tableId: order.tableId, items: order.items, orderId: order.id })
+                                }).catch(() => {});
+                            }
+                        }
+                    });
             });
 
             // Web Worker ile arka planda yavaşlamayan polling (Yedek)

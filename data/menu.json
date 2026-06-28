@@ -3,7 +3,7 @@
     "title": "Patates ve Çorba",
     "items": [
       { "name": "Mercimek Çorbası", "desc": "Mercimek, Soğan, Havuç, Et suyu, Tereyağı", "price": "" },
-      { "name": "Patates Kızartması", "desc": "Patates, Sıvı yağ, Tuz", "price": "" }
+      { "name": "Patates Kızartması", "desc": "Patates, Sıvı yağ, Tuz | ~300 Gr", "price": "" }
     ]
   },
   "pideler": {
@@ -32,17 +32,17 @@
   "kebaplar": {
     "title": "Kebaplar & Dürümler",
     "items": [
-      { "name": "Adana Kebap", "desc": "Zırh kıyması, Kuyruk yağı, Pul biber (Acılı) | 180 Gr", "price": "" },
-      { "name": "Adana Dürüm", "desc": "Zırh kıyması, Kuyruk yağı, Pul biber (Acılı) | 180 Gr", "price": "" },
-      { "name": "Urfa Kebap", "desc": "Zırh kıyması, Tuz, Dana/Kuzu eti (Acısız) | 180 Gr", "price": "" },
-      { "name": "Urfa Dürüm", "desc": "Zırh kıyması, Tuz, Dana/Kuzu eti (Acısız) | 180 Gr", "price": "" },
-      { "name": "Beyti Kebap (Soslu)", "desc": "Kebap eti, Yufka, Domates sosu, Yoğurt | 180 Gr", "price": "" },
-      { "name": "Tavuk Şiş", "desc": "Marine tavuk eti, Yoğurt, Salça, Kekik | 200 Gr", "price": "" },
-      { "name": "Tavuk Kanat", "desc": "Marine tavuk eti, Yoğurt, Salça, Kekik | 220 Gr", "price": "" },
-      { "name": "Karışık Izgara", "desc": "Adana, Urfa, Tavuk, Et şiş, Kanat | 400 Gr", "price": "" },
-      { "name": "Yoğurtlu Kebap", "desc": "Kebap eti, Pide, Yoğurt, Tereyağı | 180 Gr", "price": "" },
-      { "name": "Sac Kavurma", "desc": "Küçük dana eti, Soğan, Biber, Domates | 220 Gr", "price": "" },
-      { "name": "Et Şiş", "desc": "Kuşbaşı et, Kuyruk yağı, Tuz | 220 Gr", "price": "" }
+      { "name": "Adana Kebap", "desc": "Zırh kıyması, Kuyruk yağı, Pul biber (Acılı) | ~180 Gr", "price": "" },
+      { "name": "Adana Dürüm", "desc": "Zırh kıyması, Kuyruk yağı, Pul biber (Acılı) | ~180 Gr", "price": "" },
+      { "name": "Urfa Kebap", "desc": "Zırh kıyması, Tuz, Dana/Kuzu eti (Acısız) | ~180 Gr", "price": "" },
+      { "name": "Urfa Dürüm", "desc": "Zırh kıyması, Tuz, Dana/Kuzu eti (Acısız) | ~180 Gr", "price": "" },
+      { "name": "Beyti Kebap (Soslu)", "desc": "Kebap eti, Yufka, Domates sosu, Yoğurt | ~180 Gr", "price": "" },
+      { "name": "Tavuk Şiş", "desc": "Marine tavuk eti, Yoğurt, Salça, Kekik | ~200 Gr", "price": "" },
+      { "name": "Tavuk Kanat", "desc": "Marine tavuk eti, Yoğurt, Salça, Kekik | ~220 Gr", "price": "" },
+      { "name": "Karışık Izgara", "desc": "Adana, Urfa, Tavuk, Et şiş, Kanat | ~400 Gr", "price": "" },
+      { "name": "Yoğurtlu Kebap", "desc": "Kebap eti, Pide, Yoğurt, Tereyağı | ~180 Gr", "price": "" },
+      { "name": "Sac Kavurma", "desc": "Küçük dana eti, Soğan, Biber, Domates | ~220 Gr", "price": "" },
+      { "name": "Et Şiş", "desc": "Kuşbaşı et, Kuyruk yağı, Tuz | ~220 Gr", "price": "" }
     ]
   },
   "kiremitler": {

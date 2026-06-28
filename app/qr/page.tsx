@@ -309,7 +309,7 @@ export default function QRMenu() {
                                             <div className="flex flex-col items-end gap-2">
                                                 <div className="font-black text-brand-red text-lg whitespace-nowrap">{item.price} TL</div>
                                                 {tableId && !isReadOnly && (() => {
-                                                    const showOneHalf = ['kebaplar', 'pideler', 'kiremitler'].includes(categoryKey) && !item.name.toLowerCase().includes('lahmacun');
+                                                    const showOneHalf = item.allowOneHalf === true;
                                                     const itemOneHalf = { ...item, name: item.name + ' (1.5 Porsiyon)', price: (parseFloat(item.price) * 1.5).toString() };
                                                     
                                                     const cartItem = cart.find(c => c.name === item.name);

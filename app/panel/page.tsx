@@ -213,6 +213,12 @@ export default function Panel() {
         setMenuData(newData);
     };
 
+    const handleToggleOneHalf = (categoryKey: string, itemIndex: number, newValue: boolean) => {
+        const newData = { ...menuData };
+        newData[categoryKey].items[itemIndex].allowOneHalf = newValue;
+        setMenuData(newData);
+    };
+
     const handleAddCategory = () => {
         const title = prompt('Yeni kategori adı (Örn: İçecekler)');
         if (!title) return;
@@ -228,7 +234,7 @@ export default function Panel() {
         const price = prompt('Fiyat (İsteğe bağlı)');
         
         const newData = { ...menuData };
-        newData[categoryKey].items.push({ name, desc: desc || '', price: price || '' });
+        newData[categoryKey].items.push({ name, desc: desc || '', price: price || '', allowOneHalf: false });
         setMenuData(newData);
     };
 
@@ -448,6 +454,15 @@ export default function Panel() {
                                                 <div className="flex-1 pr-4">
                                                     <h3 className="font-bold text-gray-900">{item.name}</h3>
                                                     <p className="text-xs text-gray-500 line-clamp-1">{item.desc}</p>
+                                                    <label className="flex items-center gap-2 mt-2 text-xs font-bold text-gray-700 cursor-pointer">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={!!item.allowOneHalf} 
+                                                            onChange={(e) => handleToggleOneHalf(categoryKey, index, e.target.checked)}
+                                                            className="w-4 h-4 text-brand-red rounded border-gray-300 focus:ring-brand-red"
+                                                        />
+                                                        1.5 Porsiyon Aktif
+                                                    </label>
                                                 </div>
                                                 <div className="w-28 flex items-center gap-2">
                                                     <input 

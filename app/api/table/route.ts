@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from 'next/server';
 import { redis, cleanInactiveTables } from '@/lib/redis';
 import Pusher from 'pusher';

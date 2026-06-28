@@ -39,7 +39,8 @@ export async function POST(request: Request) {
                         success: true, 
                         tableId: foundTableId,
                         joinedSessionId: targetSession, 
-                        orders: db.tables[foundTableId].orders 
+                        orders: db.tables[foundTableId].orders,
+                        joinCode: db.tables[foundTableId].joinCode
                     });
                 }
                 // Eğer PIN Kodu varsa

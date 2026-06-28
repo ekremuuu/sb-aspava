@@ -309,33 +309,68 @@ export default function QRMenu() {
                                             <div className="flex flex-col items-end gap-2">
                                                 <div className="font-black text-brand-red text-lg whitespace-nowrap">{item.price} TL</div>
                                                 {tableId && !isReadOnly && (() => {
+                                                    const showOneHalf = ['kebaplar', 'pideler', 'kiremitler'].includes(categoryKey) && !item.name.toLowerCase().includes('lahmacun');
+                                                    const itemOneHalf = { ...item, name: item.name + ' (1.5 Porsiyon)', price: (parseFloat(item.price) * 1.5).toString() };
+                                                    
                                                     const cartItem = cart.find(c => c.name === item.name);
-                                                    if (cartItem) {
-                                                        return (
-                                                            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 shadow-inner">
-                                                                <button 
-                                                                    onClick={() => removeFromCart(item)}
-                                                                    className="w-8 h-8 bg-white text-brand-red rounded shadow-sm flex items-center justify-center font-bold active:scale-95"
-                                                                >
-                                                                    <i className="fa-solid fa-minus"></i>
-                                                                </button>
-                                                                <span className="font-black text-gray-800 min-w-[1.5rem] text-center">{cartItem.qty}</span>
+                                                    const cartItemOneHalf = showOneHalf ? cart.find(c => c.name === itemOneHalf.name) : null;
+                                                    
+                                                    return (
+                                                        <div className="flex flex-col gap-2 items-end">
+                                                            {/* Normal Porsiyon */}
+                                                            {cartItem ? (
+                                                                <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 shadow-inner">
+                                                                    <button 
+                                                                        onClick={() => removeFromCart(item)}
+                                                                        className="w-8 h-8 bg-white text-brand-red rounded shadow-sm flex items-center justify-center font-bold active:scale-95"
+                                                                    >
+                                                                        <i className="fa-solid fa-minus"></i>
+                                                                    </button>
+                                                                    <span className="font-black text-gray-800 min-w-[1.5rem] text-center">{cartItem.qty}</span>
+                                                                    <button 
+                                                                        onClick={() => addToCart(item)}
+                                                                        className="w-8 h-8 bg-brand-red text-white rounded shadow-sm flex items-center justify-center font-bold active:scale-95"
+                                                                    >
+                                                                        <i className="fa-solid fa-plus"></i>
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
                                                                 <button 
                                                                     onClick={() => addToCart(item)}
-                                                                    className="w-8 h-8 bg-brand-red text-white rounded shadow-sm flex items-center justify-center font-bold active:scale-95"
+                                                                    className="bg-brand-red text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm active:scale-95 transition-transform flex items-center gap-2 w-full justify-center"
                                                                 >
-                                                                    <i className="fa-solid fa-plus"></i>
+                                                                    <i className="fa-solid fa-plus"></i> Ekle
                                                                 </button>
-                                                            </div>
-                                                        );
-                                                    }
-                                                    return (
-                                                        <button 
-                                                            onClick={() => addToCart(item)}
-                                                            className="bg-brand-red text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm active:scale-95 transition-transform flex items-center gap-2"
-                                                        >
-                                                            <i className="fa-solid fa-plus"></i> Ekle
-                                                        </button>
+                                                            )}
+                                                            
+                                                            {/* 1.5 Porsiyon */}
+                                                            {showOneHalf && (
+                                                                cartItemOneHalf ? (
+                                                                    <div className="flex items-center gap-2 bg-orange-100 rounded-lg p-1 shadow-inner">
+                                                                        <button 
+                                                                            onClick={() => removeFromCart(itemOneHalf)}
+                                                                            className="w-8 h-8 bg-white text-orange-600 rounded shadow-sm flex items-center justify-center font-bold active:scale-95"
+                                                                        >
+                                                                            <i className="fa-solid fa-minus"></i>
+                                                                        </button>
+                                                                        <span className="font-black text-orange-800 min-w-[1.5rem] text-center text-sm" title="1.5 Porsiyon">{cartItemOneHalf.qty}</span>
+                                                                        <button 
+                                                                            onClick={() => addToCart(itemOneHalf)}
+                                                                            className="w-8 h-8 bg-orange-500 text-white rounded shadow-sm flex items-center justify-center font-bold active:scale-95"
+                                                                        >
+                                                                            <i className="fa-solid fa-plus"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button 
+                                                                        onClick={() => addToCart(itemOneHalf)}
+                                                                        className="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition-transform flex items-center gap-1.5 w-full justify-center"
+                                                                    >
+                                                                        <i className="fa-solid fa-plus"></i> 1.5 Porsiyon
+                                                                    </button>
+                                                                )
+                                                            )}
+                                                        </div>
                                                     );
                                                 })()}
                                             </div>

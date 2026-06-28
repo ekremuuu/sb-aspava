@@ -10,8 +10,9 @@ export async function GET() {
 
     try {
         let db: any = await redis.get('aspava:tables');
-        if (!db) db = { tables: {}, pendingOrders: [] };
+        if (!db) db = { tables: {}, pendingOrders: [], settings: { autoApprove: false } };
         if (!db.pendingOrders) db.pendingOrders = [];
+        if (!db.settings) db.settings = { autoApprove: false };
         
         if (cleanInactiveTables(db)) {
             await redis.set('aspava:tables', db);
@@ -29,10 +30,11 @@ export async function POST(request: Request) {
     if (!auth || auth.value !== 'true') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
-        const { action, tableId, orderId, status, fromTableId, toTableId, items } = await request.json();
+        const { action, tableId, orderId, status, fromTableId, toTableId, items, settings } = await request.json();
         let db: any = await redis.get('aspava:tables');
         if (!db) return NextResponse.json({ error: 'DB error' }, { status: 500 });
         if (!db.pendingOrders) db.pendingOrders = [];
+        if (!db.settings) db.settings = { autoApprove: false };
 
         if (action === 'close_table' && tableId) {
             db.tables[tableId].sessionId = null;
@@ -99,6 +101,8 @@ export async function POST(request: Request) {
                 db.tables[tableId].orders.push(newOrder);
                 db.tables[tableId].lastActivity = Date.now();
             }
+        } else if (action === 'update_settings' && settings) {
+            db.settings = { ...db.settings, ...settings };
         }
 
         await redis.set('aspava:tables', db);

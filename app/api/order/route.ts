@@ -14,11 +14,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Yetkisiz erişim veya masa kapanmış' }, { status: 403 });
         }
 
+        const isAutoApprove = db.settings?.autoApprove === true;
         const newOrder = {
             id: Date.now().toString(),
             tableId,
             items,
-            status: 'bekliyor', // bekliyor, onaylandi, iptal
+            status: isAutoApprove ? 'onaylandi' : 'bekliyor', // bekliyor, onaylandi, iptal
             timestamp: new Date().toISOString()
         };
 
@@ -26,7 +27,9 @@ export async function POST(request: Request) {
         
         db.tables[tableId].orders.push(newOrder);
         db.tables[tableId].lastActivity = Date.now();
-        db.pendingOrders.push(newOrder);
+        if (!isAutoApprove) {
+            db.pendingOrders.push(newOrder);
+        }
 
         await redis.set('aspava:tables', db);
 

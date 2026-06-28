@@ -1,77 +1,76 @@
-
         // --- 1. MENÜ VERİLERİ VE KATEGORİ MODAL MANTIĞI ---
         const menuData = {
             kahvalti: {
                 title: "Patates ve Çorba",
                 items: [
-                    { name: "Mercimek Çorbası", desc: "Sıcacık, tam kıvamında süzme mercimek çorbası." },
-                    { name: "Patates Kızartması", desc: "Özenle dilimlenmiş çıtır patates kızartması." }
+                    { name: "Mercimek Çorbası", desc: "Mercimek, Soğan, Havuç, Et suyu, Tereyağı" },
+                    { name: "Patates Kızartması", desc: "Patates, Sıvı yağ, Tuz | ~300 Gr" }
                 ]
             },
             pideler: {
                 title: "Pideler & Lahmacun",
                 items: [
-                    { name: "Beyaz Peynirli Pide", desc: "Taş fırında özenle pişmiş taze pide." },
-                    { name: "Mantarlı Pide", desc: "Taze mantarlı özel harç." },
-                    { name: "Sucuklu Pide", desc: "Bol sucuklu odun ateşi lezzeti." },
-                    { name: "Kıymalı Pide", desc: "Özel baharatlarla harmanlanmış kıymalı pide." },
-                    { name: "Kıymalı Yumurtalı", desc: "Kıymalı pidenin yumurta ile efsane buluşması." },
-                    { name: "Kıymalı Kaşarlı", desc: "Eriyen kaşar ile lezzetlenen kıymalı pide." },
-                    { name: "Kuşbaşılı Pide", desc: "Özenle seçilmiş etlerden kuşbaşılı pide." },
-                    { name: "Kuşbaşılı Kaşarlı", desc: "Bol kaşarlı ve kuşbaşılı spesiyal." },
-                    { name: "Kuşbaşılı Yumurtalı", desc: "Yumurtalı zengin kuşbaşılı pide." },
+                    { name: "Beyaz Peynirli Pide", desc: "Beyaz peynir, Maydanoz, Yumurta" },
+                    { name: "Mantarlı Pide", desc: "Mantar, Kaşar peyniri, Domates, Biber" },
+                    { name: "Sucuklu Pide", desc: "Dana sucuk, Kaşar peyniri, Tereyağı" },
+                    { name: "Kıymalı Pide", desc: "Dana kıyma, Soğan, Domates, Biber" },
+                    { name: "Kıymalı Yumurtalı", desc: "Dana kıyma, Yumurta, Soğan, Baharat" },
+                    { name: "Kıymalı Kaşarlı", desc: "Dana kıyma, Kaşar peyniri, Soğan" },
+                    { name: "Kuşbaşılı Pide", desc: "Kuşbaşı dana eti, Domates, Yeşil biber" },
+                    { name: "Kuşbaşılı Kaşarlı", desc: "Kuşbaşı dana eti, Kaşar peyniri, Biber" },
+                    { name: "Kuşbaşılı Yumurtalı", desc: "Kuşbaşı dana eti, Yumurta, Domates" },
                     { name: "Kaşarlı Pide", desc: "Odun ateşinde kızarmış bol kaşarlı pide." },
-                    { name: "Karışık Pide", desc: "Tüm lezzetlerin bir arada olduğu zengin pide." },
-                    { name: "Tavuklu Pide", desc: "Özel soslu tavuk etiyle hazırlanan pide." },
-                    { name: "Kapalı Karadeniz", desc: "Karadeniz usulü kapalı pide lezzeti." },
-                    { name: "Kapalı Kaşarlı", desc: "İçi bol kaşar dolu çıtır kapalı pide." },
-                    { name: "Lahmacun Acısız", desc: "İnce hamur, bol malzeme, taş fırın lezzeti." },
-                    { name: "Lahmacun Acılı", desc: "Acı sevenler için özel harçlı lahmacun." },
-                    { name: "Antep Lahmacun", desc: "Sarımsaklı ve bol malzemeli yöresel lezzet." },
-                    { name: "Peymacun", desc: "Peynirli lahmacun." }
+                    { name: "Karışık Pide", desc: "Kıyma, Kuşbaşı, Sucuk, Kaşar peyniri" },
+                    { name: "Tavuklu Pide", desc: "Tavuk göğsü, Kaşar peyniri, Domates, Biber" },
+                    { name: "Kapalı Karadeniz", desc: "Dana eti/kıyma, Soğan, Bol tereyağı" },
+                    { name: "Kapalı Kaşarlı", desc: "Kaşar peyniri, Tereyağı, Özel hamur" },
+                    { name: "Lahmacun Acısız", desc: "Dana kıyma, Sarımsak, Domates, Maydanoz" },
+                    { name: "Lahmacun Acılı", desc: "Dana kıyma, Sarımsak, Domates, Maydanoz" },
+                    { name: "Antep Lahmacun", desc: "Zırh kıyması, Bol sarımsak, Baharat" },
+                    { name: "Peymacun", desc: "Peynir, Maydanoz, Lahmacun hamuru" }
                 ]
             },
             kebaplar: {
                 title: "Kebaplar & Dürümler",
                 items: [
-                    { name: "Adana Kebap", desc: "Zırh kıymasıyla hazırlanan acılı klasik." },
-                    { name: "Adana Dürüm", desc: "Özel lavaşta acılı Adana dürüm." },
-                    { name: "Urfa Kebap", desc: "Acısız, tam kıvamında ızgara kebabı." },
-                    { name: "Urfa Dürüm", desc: "Özel lavaşta acısız Urfa dürüm." },
-                    { name: "Beyti Kebap (Soslu)", desc: "Özel sos ve tereyağı eşliğinde beyti." },
-                    { name: "Tavuk Şiş", desc: "Özel terbiye edilmiş tavuk göğsü." },
-                    { name: "Tavuk Kanat", desc: "Izgarada nar gibi kızarmış tavuk kanat." },
-                    { name: "Karışık Izgara", desc: "Tüm ızgara lezzetlerini tatmak isteyenlere." },
-                    { name: "Yoğurtlu Kebap", desc: "Yoğurt, sos ve tereyağı ile lezzetlendirilmiş." },
-                    { name: "Sac Kavurma", desc: "Sıcak sacda lokum gibi kavurma." },
-                    { name: "Et Şiş", desc: "Terbiyeli dana etinden yumuşacık şiş." }
+                    { name: "Adana Kebap", desc: "Zırh kıyması, Kuyruk yağı, Pul biber (Acılı) | ~180 Gr" },
+                    { name: "Adana Dürüm", desc: "Zırh kıyması, Kuyruk yağı, Pul biber (Acılı) | ~180 Gr" },
+                    { name: "Urfa Kebap", desc: "Zırh kıyması, Tuz, Dana/Kuzu eti (Acısız) | ~180 Gr" },
+                    { name: "Urfa Dürüm", desc: "Zırh kıyması, Tuz, Dana/Kuzu eti (Acısız) | ~180 Gr" },
+                    { name: "Beyti Kebap (Soslu)", desc: "Kebap eti, Yufka, Domates sosu, Yoğurt | ~180 Gr" },
+                    { name: "Tavuk Şiş", desc: "Marine tavuk eti, Yoğurt, Salça, Kekik | ~200 Gr" },
+                    { name: "Tavuk Kanat", desc: "Marine tavuk eti, Yoğurt, Salça, Kekik | ~220 Gr" },
+                    { name: "Karışık Izgara", desc: "Adana, Urfa, Tavuk, Et şiş, Kanat | ~400 Gr" },
+                    { name: "Yoğurtlu Kebap", desc: "Kebap eti, Pide, Yoğurt, Tereyağı | ~180 Gr" },
+                    { name: "Sac Kavurma", desc: "Küçük dana eti, Soğan, Biber, Domates | ~220 Gr" },
+                    { name: "Et Şiş", desc: "Kuşbaşı et, Kuyruk yağı, Tuz | ~220 Gr" }
                 ]
             },
             kiremitler: {
                 title: "Kiremit Lezzetleri",
                 items: [
-                    { name: "Kiremitte Kuşbaşı", desc: "Sebzelerle birlikte kiremitte fırınlanmış et." },
-                    { name: "Kiremitte Tavuk", desc: "Özel soslu tavuk parçalarının kiremit lezzeti." }
+                    { name: "Kiremitte Kuşbaşı", desc: "Dana eti, Domates, Biber, Sarımsak" },
+                    { name: "Kiremitte Tavuk", desc: "Marine tavuk eti, Domates, Biber, Sarımsak" }
                 ]
             },
             tatlilar: {
                 title: "Tatlılar",
                 items: [
-                    { name: "Künefe", desc: "Özel peyniri ve kıvamında şerbetiyle sıcak künefe." },
+                    { name: "Künefe", desc: "Kadayıf, Özel peynir, Şerbet, Fıstık" }
                 ]
             },
             icecekler: {
                 title: "İçecekler",
                 items: [
-                    { name: "Coca Cola / Coca Cola Zero", desc: "Kutu" },
-                    { name: "Fanta", desc: "Kutu" },
-                    { name: "Fuse Tea", desc: "Kutu" },
-                    { name: "Ayran (Büyük Boy)", desc: "Soğuk ve köpüklü" },
+                    { name: "Coca Cola / Coca Cola Zero", desc: "Su, Şeker, Aroma, Karbondioksit" },
+                    { name: "Fanta", desc: "Su, Şeker, Aroma, Karbondioksit" },
+                    { name: "Fuse Tea", desc: "Kutu İçecek" },
+                    { name: "Ayran (Büyük Boy)", desc: "Yoğurt, Su, Tuz" },
                     { name: "Sprite / Soda / Su / Şalgam", desc: "Soğuk İçecekler" },
-                    { name: "Çay", desc: "Taze demlenmiş" },
-                    { name: "1 Lt. Ayran", desc: "Büyük Boy" },
-                    { name: "1 Lt. Coca Cola / Zero / Fanta", desc: "Aile Boyu" },
-                    { name: "2.5 Lt. Coca Cola / Fanta", desc: "Ekstra Büyük Boy" }
+                    { name: "Çay", desc: "Mineral, Su, Çay yaprağı" },
+                    { name: "1 Lt. Ayran", desc: "Yoğurt, Su, Tuz" },
+                    { name: "1 Lt. Coca Cola / Zero / Fanta", desc: "Su, Şeker, Aroma, Karbondioksit" },
+                    { name: "2.5 Lt. Coca Cola / Fanta", desc: "Su, Şeker, Aroma, Karbondioksit" }
                 ]
             }
         };

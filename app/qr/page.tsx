@@ -110,8 +110,8 @@ export default function QRMenu() {
             const currentS = new URLSearchParams(window.location.search).get('s') || getCookie('aspava_session');
             
             // Sadece bu masayla ilgili bir güncelleme ise tabloyu yenile
-            if (data.tableId === (currentT || t || null) || data.sessionId === (currentS || localSession || null)) {
-                checkTableSession(currentT || t || null, currentS || localSession || null, currentS || s || null);
+            if (data.tableId === currentT || data.sessionId === currentS) {
+                checkTableSession(currentT, currentS, currentS);
             }
         });
 
@@ -119,8 +119,8 @@ export default function QRMenu() {
         const fallbackInterval = setInterval(() => {
             const currentT = new URLSearchParams(window.location.search).get('masa');
             const currentS = new URLSearchParams(window.location.search).get('s') || getCookie('aspava_session');
-            if (currentT || currentS || t || s || localSession) {
-                checkTableSession(currentT || t || null, currentS || localSession || null, currentS || s || null);
+            if (currentT || currentS) {
+                checkTableSession(currentT, currentS, currentS);
             }
         }, 3000);
 

@@ -339,12 +339,6 @@ export default function Panel() {
                             >
                                 Menü Fiyatları
                             </button>
-                            <button 
-                                onClick={() => setActiveTab('settings')}
-                                className={`px-4 py-2 font-bold rounded-md transition-colors ${activeTab === 'settings' ? 'bg-white shadow text-brand-red active-tab' : 'text-gray-500 hover:text-gray-700'}`}
-                            >
-                                Ayarlar
-                            </button>
                         </div>
                         <div onClick={unlockAudio} className={`flex items-center gap-2 rounded-lg p-2 panel-tabs h-10 shadow-inner cursor-pointer transition-colors ${!audioEnabled ? 'bg-red-100 animate-pulse border border-red-200' : 'bg-gray-100'}`} title="Sipariş Bildirim Sesi">
                             <i className={`fa-solid ${!audioEnabled || volume === 0 ? 'fa-volume-xmark text-brand-red' : 'fa-volume-high text-gray-500'} w-4 text-center`}></i>
@@ -372,8 +366,8 @@ export default function Panel() {
                                 <span className="text-xs font-bold text-brand-red px-2 select-none">Ses Kapalı (Açmak için tıkla)</span>
                             )}
                         </div>
-                        <button onClick={toggleDarkMode} className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 text-white hover:bg-gray-700 transition-colors dark-toggle shadow-sm">
-                            <i className={`fa-solid ${darkMode ? 'fa-sun text-yellow-400' : 'fa-moon'}`}></i>
+                        <button onClick={() => setActiveTab('settings')} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-sm ${activeTab === 'settings' ? 'bg-brand-red text-white' : 'bg-gray-800 text-white hover:bg-gray-700'}`} title="Ayarlar">
+                            <i className="fa-solid fa-gear"></i>
                         </button>
                     </div>
                 </div>
@@ -384,20 +378,37 @@ export default function Panel() {
                             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                                 <i className="fa-solid fa-cog"></i> Genel Ayarlar
                             </h2>
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-lg">Siparişleri Otomatik Onayla & Yazdır</h3>
-                                    <p className="text-sm text-gray-500">QR menüden gelen siparişler manuel onaya düşmeden direkt mutfak fişine gönderilir.</p>
+                            <div className="flex flex-col gap-4">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div>
+                                        <h3 className="font-bold text-gray-900 text-lg">Siparişleri Otomatik Onayla & Yazdır</h3>
+                                        <p className="text-sm text-gray-500">QR menüden gelen siparişler manuel onaya düşmeden direkt mutfak fişine gönderilir.</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="sr-only peer" 
+                                            checked={adminData.settings?.autoApprove || false}
+                                            onChange={(e) => handleAction('update_settings', { settings: { autoApprove: e.target.checked } })}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer" 
-                                        checked={adminData.settings?.autoApprove || false}
-                                        onChange={(e) => handleAction('update_settings', { settings: { autoApprove: e.target.checked } })}
-                                    />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                                </label>
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div>
+                                        <h3 className="font-bold text-gray-900 text-lg">Karanlık Mod (Dark Mode)</h3>
+                                        <p className="text-sm text-gray-500">Panelin görünümünü koyu temaya geçirir.</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="sr-only peer" 
+                                            checked={darkMode}
+                                            onChange={toggleDarkMode}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-800"></div>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>

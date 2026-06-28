@@ -20,7 +20,7 @@ export default function QRMenu() {
     const [cartOpen, setCartOpen] = useState(false);
     const [ordering, setOrdering] = useState(false);
     const [myOrders, setMyOrders] = useState<any[]>([]);
-    const [isReadOnly, setIsReadOnly] = useState<boolean>(false);
+    const [isReadOnly, setIsReadOnly] = useState<boolean>(true);
     
     // API'den durumu kontrol eden fonksiyon
     const checkTableSession = (tId: string | null, sId: string | null, urlSession: string | null = null) => {

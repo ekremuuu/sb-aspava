@@ -588,6 +588,17 @@ export default function Panel() {
                                                 )}
                                             </div>
                                             
+                                            {!isActive && (
+                                                <div className="mt-4">
+                                                    <button 
+                                                        onClick={() => handleAction('open_table', { tableId })}
+                                                        className="w-full bg-brand-red text-white text-sm font-bold px-4 py-3 rounded-lg hover:bg-brand-dark transition-colors shadow-sm flex items-center justify-center gap-2"
+                                                    >
+                                                        <i className="fa-solid fa-play"></i> Masayı Aç
+                                                    </button>
+                                                </div>
+                                            )}
+                                            
                                             {isActive && (
                                                 <>
                                                     <div className="flex justify-between items-center mb-2">

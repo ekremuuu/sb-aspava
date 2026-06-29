@@ -37,7 +37,12 @@ export async function POST(request: Request) {
         if (!db.pendingOrders) db.pendingOrders = [];
         if (!db.settings) db.settings = { autoApprove: false };
 
-        if (action === 'close_table' && tableId) {
+        if (action === 'open_table' && tableId) {
+            if (db.tables[tableId] && !db.tables[tableId].sessionId) {
+                db.tables[tableId].sessionId = 'panel_' + Math.random().toString(36).substring(2, 9);
+                db.tables[tableId].lastActivity = Date.now();
+            }
+        } else if (action === 'close_table' && tableId) {
             db.tables[tableId].sessionId = null;
             db.tables[tableId].orders = [];
             // Remove pending orders for this table

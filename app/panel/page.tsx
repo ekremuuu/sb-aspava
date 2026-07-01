@@ -166,6 +166,31 @@ export default function Panel() {
         const savedBusiness = localStorage.getItem('qz_business');
         if (savedPrinter) setSelectedPrinter(savedPrinter);
         if (savedBusiness) setBusinessName(savedBusiness);
+        const setupQZSecurity = (qz: any) => {
+            if (!qz || !qz.security) return;
+            try {
+                qz.security.setCertificatePromise((resolve: any, reject: any) => {
+                    fetch('/api/qz/cert', { cache: 'no-store' })
+                        .then(res => res.text())
+                        .then(resolve)
+                        .catch(() => resolve());
+                });
+                qz.security.setSignatureAlgorithm('SHA512');
+                qz.security.setSignaturePromise((toSign: any) => {
+                    return (resolve: any, reject: any) => {
+                        fetch('/api/qz/sign', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ request: toSign })
+                        })
+                            .then(res => res.text())
+                            .then(resolve)
+                            .catch(() => resolve());
+                    };
+                });
+            } catch (e) {}
+        };
+
         const attemptConnect = (qz: any) => {
             if (!qz || !qz.websocket) return;
             qzRef.current = qz;
@@ -175,9 +200,7 @@ export default function Panel() {
             }
             setQzStatus('connecting');
             try {
-                qz.security.setCertificatePromise((resolve: any, reject: any) => resolve());
-                qz.security.setSignatureAlgorithm('SHA512');
-                qz.security.setSignaturePromise((toSign: any) => (resolve: any, reject: any) => resolve());
+                setupQZSecurity(qz);
                 qz.websocket.connect({ retries: 1, delay: 0.5 }).then(() => {
                     setQzStatus('connected');
                 }).catch(() => {});
@@ -199,11 +222,7 @@ export default function Panel() {
             if (qz && qz.websocket && qz.websocket.isActive()) {
                 setQzStatus(prev => {
                     if (prev !== 'connected') {
-                        try {
-                            qz.security.setCertificatePromise((resolve: any, reject: any) => resolve());
-                            qz.security.setSignatureAlgorithm('SHA512');
-                            qz.security.setSignaturePromise((toSign: any) => (resolve: any, reject: any) => resolve());
-                        } catch (err) {}
+                        setupQZSecurity(qz);
                         qz.printers.find().then((res: any) => {
                             const list: string[] = Array.isArray(res) ? res : (res ? [res] : []);
                             setQzPrinters(list);
@@ -225,9 +244,13 @@ export default function Panel() {
         try {
             setQzErrorMsg('');
             if (qz && qz.security) {
-                qz.security.setCertificatePromise((resolve: any, reject: any) => resolve());
+                qz.security.setCertificatePromise((resolve: any, reject: any) => {
+                    fetch('/api/qz/cert', { cache: 'no-store' }).then(res => res.text()).then(resolve).catch(() => resolve());
+                });
                 qz.security.setSignatureAlgorithm('SHA512');
-                qz.security.setSignaturePromise((toSign: any) => (resolve: any, reject: any) => resolve());
+                qz.security.setSignaturePromise((toSign: any) => (resolve: any, reject: any) => {
+                    fetch('/api/qz/sign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ request: toSign }) }).then(res => res.text()).then(resolve).catch(() => resolve());
+                });
             }
             const result = await qz.printers.find();
             // QZ Tray bazen string, bazen array döner
@@ -253,9 +276,15 @@ export default function Panel() {
         setQzStatus('connecting');
         setQzErrorMsg('');
         try {
-            qz.security.setCertificatePromise((resolve: any, reject: any) => resolve());
-            qz.security.setSignatureAlgorithm('SHA512');
-            qz.security.setSignaturePromise((toSign: any) => (resolve: any, reject: any) => resolve());
+            if (qz && qz.security) {
+                qz.security.setCertificatePromise((resolve: any, reject: any) => {
+                    fetch('/api/qz/cert', { cache: 'no-store' }).then(res => res.text()).then(resolve).catch(() => resolve());
+                });
+                qz.security.setSignatureAlgorithm('SHA512');
+                qz.security.setSignaturePromise((toSign: any) => (resolve: any, reject: any) => {
+                    fetch('/api/qz/sign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ request: toSign }) }).then(res => res.text()).then(resolve).catch(() => resolve());
+                });
+            }
             await qz.websocket.connect({ retries: 1, delay: 0.5 });
             setQzStatus('connected');
             await fetchPrinters(qz);
@@ -526,9 +555,13 @@ export default function Panel() {
         const data = [{ type: 'raw', format: 'plain', data: lines.join('') }];
         try {
             if (qz && qz.security) {
-                qz.security.setCertificatePromise((resolve: any, reject: any) => resolve());
+                qz.security.setCertificatePromise((resolve: any, reject: any) => {
+                    fetch('/api/qz/cert', { cache: 'no-store' }).then(res => res.text()).then(resolve).catch(() => resolve());
+                });
                 qz.security.setSignatureAlgorithm('SHA512');
-                qz.security.setSignaturePromise((toSign: any) => (resolve: any, reject: any) => resolve());
+                qz.security.setSignaturePromise((toSign: any) => (resolve: any, reject: any) => {
+                    fetch('/api/qz/sign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ request: toSign }) }).then(res => res.text()).then(resolve).catch(() => resolve());
+                });
             }
             await qz.print(config, data);
             if (orderId === 'TEST' || orderId === 'MANUEL') {

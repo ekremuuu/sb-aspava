@@ -564,17 +564,11 @@ export default function Panel() {
                 });
             }
             await qz.print(config, data);
-            if (orderId === 'TEST' || orderId === 'MANUEL') {
-                alert(`✅ Fiş başarıyla yazıcıya (${printer}) gönderildi!`);
-            }
         } catch (e: any) {
             const errStr = e?.message || e?.toString() || 'Bilinmeyen yazdırma hatası';
             console.error('QZ Tray yazdırma hatası:', e);
             setQzErrorMsg(`Yazdırma Hatası (${printer}): ${errStr}`);
             setQzStatus('error');
-            if (orderId === 'TEST' || orderId === 'MANUEL') {
-                alert(`❌ Yazdırma Hatası: ${errStr}`);
-            }
         }
     };
 
@@ -834,8 +828,8 @@ export default function Panel() {
                                     )}
                                 </div>
 
-                                {/* Test Fişi */}
-                                <div className="flex gap-3 mt-2">
+                                {/* Test Fişi ve Sertifika İndirme */}
+                                <div className="flex flex-wrap gap-3 mt-2">
                                     <button
                                         onClick={() => printWithQZTray('TEST', [{name: 'Test Ürünü', price: 25, qty: 2}], 'TEST', 'QZ Tray test fişi')}
                                         disabled={qzStatus !== 'connected' || !selectedPrinter}
@@ -843,6 +837,13 @@ export default function Panel() {
                                     >
                                         <i className="fa-solid fa-receipt"></i> Test Fişi Yazdır
                                     </button>
+                                    <a
+                                        href="/sbaspava-qz.crt"
+                                        download="sbaspava-qz.crt"
+                                        className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+                                    >
+                                        <i className="fa-solid fa-shield-halved"></i> Sertifikayı İndir (.crt)
+                                    </a>
                                 </div>
                                 {qzStatus !== 'connected' && (
                                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">

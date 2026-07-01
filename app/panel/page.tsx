@@ -166,13 +166,31 @@ export default function Panel() {
         const savedBusiness = localStorage.getItem('qz_business');
         if (savedPrinter) setSelectedPrinter(savedPrinter);
         if (savedBusiness) setBusinessName(savedBusiness);
+        const attemptConnect = (qz: any) => {
+            if (!qz || !qz.websocket) return;
+            qzRef.current = qz;
+            if (qz.websocket.isActive()) {
+                setQzStatus('connected');
+                return;
+            }
+            setQzStatus('connecting');
+            try {
+                qz.security.setCertificatePromise((resolve: any, reject: any) => resolve());
+                qz.security.setSignatureAlgorithm('SHA512');
+                qz.security.setSignaturePromise((toSign: any) => (resolve: any, reject: any) => resolve());
+                qz.websocket.connect({ retries: 1, delay: 0.5 }).then(() => {
+                    setQzStatus('connected');
+                }).catch(() => {});
+            } catch (err) {}
+        };
+
         if (!(window as any).qz) {
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js';
-            script.onload = () => { qzRef.current = (window as any).qz; };
+            script.onload = () => { attemptConnect((window as any).qz); };
             document.head.appendChild(script);
         } else {
-            qzRef.current = (window as any).qz;
+            attemptConnect((window as any).qz);
         }
 
         // QZ Tray arka planda bağlandığında arayüzü otomatik yeşile çeviren kontrol

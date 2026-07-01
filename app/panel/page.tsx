@@ -45,6 +45,13 @@ export default function Panel() {
     const [businessName, setBusinessName] = useState<string>('SB Aspava');
     const qzRef = useRef<any>(null);
 
+    // Web Serial API states
+    const [serialStatus, setSerialStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+    const [serialErrorMsg, setSerialErrorMsg] = useState<string>('');
+    const [serialBaudRate, setSerialBaudRate] = useState<number>(9600);
+    const [printMethod, setPrintMethod] = useState<'serial' | 'qz'>('serial');
+    const serialPortRef = useRef<any>(null);
+
     const unlockAudio = () => {
         setAudioEnabled(true);
         if (audioUnlockedRef.current) return;
@@ -164,8 +171,32 @@ export default function Panel() {
         if (typeof window === 'undefined') return;
         const savedPrinter = localStorage.getItem('qz_printer');
         const savedBusiness = localStorage.getItem('qz_business');
+        const savedMethod = localStorage.getItem('preferred_print_method') as 'serial' | 'qz';
         if (savedPrinter) setSelectedPrinter(savedPrinter);
         if (savedBusiness) setBusinessName(savedBusiness);
+        if (savedMethod) setPrintMethod(savedMethod);
+
+        if ('serial' in navigator) {
+            (navigator as any).serial.getPorts().then(async (ports: any[]) => {
+                if (ports && ports.length > 0) {
+                    try {
+                        const port = ports[0];
+                        if (!port.readable && !port.writable) {
+                            await port.open({ baudRate: 9600 });
+                        }
+                        serialPortRef.current = port;
+                        setSerialStatus('connected');
+                        port.addEventListener('disconnect', () => {
+                            serialPortRef.current = null;
+                            setSerialStatus('disconnected');
+                        });
+                    } catch (err) {
+                        console.warn('Otomatik Web Serial bağlantı hatası:', err);
+                    }
+                }
+            }).catch(() => {});
+        }
+
         const setupQZSecurity = (qz: any) => {
             if (!qz || !qz.security) return;
             try {
@@ -489,21 +520,65 @@ export default function Panel() {
         fetchAdminData();
     };
 
-    const printWithQZTray = async (tableId: string, items: any, orderId: string, note?: string) => {
-        const qz = qzRef.current || (window as any).qz;
-        if (!qz) { console.error('QZ Tray yüklü değil.'); return; }
-        if (!qz.websocket.isActive()) {
-            console.warn('QZ Tray bağlı değil, yazdırma atlandı.');
-            return;
-        }
-        const printer = selectedPrinter || localStorage.getItem('qz_printer') || '';
-        if (!printer) {
-            if (orderId === 'TEST' || orderId === 'MANUEL') {
-                alert('Lütfen Ayarlar > QZ Tray bölümünden bir yazıcı seçin veya elle girin.');
-            } else {
-                console.warn('Yazıcı seçilmediği için arka planda otomatik yazdırma atlandı.');
+    const connectSerialPort = async () => {
+        try {
+            setSerialErrorMsg('');
+            setSerialStatus('connecting');
+            if (!('serial' in navigator)) {
+                throw new Error('Tarayıcınız Web Serial desteği sunmuyor! Lütfen Google Chrome veya Microsoft Edge kullanın.');
             }
-            return;
+            const port = await (navigator as any).serial.requestPort();
+            await port.open({ baudRate: serialBaudRate || 9600 });
+            serialPortRef.current = port;
+            setSerialStatus('connected');
+            localStorage.setItem('preferred_print_method', 'serial');
+            setPrintMethod('serial');
+
+            port.addEventListener('disconnect', () => {
+                serialPortRef.current = null;
+                setSerialStatus('disconnected');
+            });
+        } catch (e: any) {
+            console.error('Serial port error:', e);
+            if (e?.name !== 'NotFoundError') {
+                setSerialErrorMsg(e?.message || e?.toString() || 'Bağlantı hatası');
+                setSerialStatus('error');
+            } else {
+                setSerialStatus('disconnected');
+            }
+        }
+    };
+
+    const disconnectSerialPort = async () => {
+        try {
+            if (serialPortRef.current) {
+                await serialPortRef.current.close();
+                serialPortRef.current = null;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        setSerialStatus('disconnected');
+    };
+
+    const printWithQZTray = async (tableId: string, items: any, orderId: string, note?: string) => {
+        const isSerial = printMethod === 'serial' || (serialPortRef.current && qzStatus !== 'connected');
+        const qz = qzRef.current || (window as any).qz;
+        const printer = selectedPrinter || localStorage.getItem('qz_printer') || '';
+        if (!isSerial) {
+            if (!qz) { console.error('QZ Tray yüklü değil.'); return; }
+            if (!qz.websocket.isActive()) {
+                console.warn('QZ Tray bağlı değil, yazdırma atlandı.');
+                return;
+            }
+            if (!printer) {
+                if (orderId === 'TEST' || orderId === 'MANUEL' || orderId === 'ADİSYON') {
+                    alert('Lütfen Ayarlar > Yazıcı bölümünden bir yazıcı seçin veya elle girin.');
+                } else {
+                    console.warn('Yazıcı seçilmediği için arka planda otomatik yazdırma atlandı.');
+                }
+                return;
+            }
         }
 
         const ESC = '\x1B';
@@ -554,6 +629,40 @@ export default function Panel() {
         lines.push(CENTER + BOLD_ON + `TOPLAM: ${total.toFixed(2)} TL` + BOLD_OFF + LF);
         lines.push(LF + LF);
         lines.push(CUT);
+
+        if (isSerial) {
+            if (!serialPortRef.current) {
+                if (orderId === 'TEST' || orderId === 'MANUEL' || orderId === 'ADİSYON') {
+                    alert('Lütfen önce Ayarlar > Yazıcı bölümünden "🔌 USB/COM Yazıcıya Bağlan" butonuna basarak yazıcınızı bağlayın.');
+                } else {
+                    console.warn('Web Serial bağlı olmadığı için otomatik yazdırma atlandı.');
+                }
+                return;
+            }
+            try {
+                const rawStr = lines.join('');
+                const bytes = new Uint8Array(rawStr.length);
+                for (let i = 0; i < rawStr.length; i++) {
+                    bytes[i] = rawStr.charCodeAt(i) & 0xFF;
+                }
+                const writer = serialPortRef.current.writable.getWriter();
+                await writer.write(bytes);
+                writer.releaseLock();
+                if (orderId === 'TEST') {
+                    alert('Web Serial üzerinden test fişi başarıyla yazdırıldı! ✓');
+                }
+                return;
+            } catch (e: any) {
+                console.error('Web Serial yazdırma hatası:', e);
+                const errStr = e?.message || e?.toString() || 'Yazdırma hatası';
+                setSerialErrorMsg(errStr);
+                setSerialStatus('error');
+                if (orderId === 'TEST' || orderId === 'MANUEL' || orderId === 'ADİSYON') {
+                    alert('Web Serial Yazdırma Hatası: ' + errStr);
+                }
+                return;
+            }
+        }
 
         const config = qz.configs.create(printer);
         const data = [{ type: 'raw', format: 'plain', data: lines.join('') }];
@@ -714,147 +823,269 @@ export default function Panel() {
                             </div>
                         </div>
 
-                        {/* QZ Tray Yazici Ayarlari */}
+                        {/* Yazıcı Bağlantı Ayarları Card */}
                         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                             <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                <i className="fa-solid fa-print"></i> QZ Tray Yazıcı Ayarları
+                                <i className="fa-solid fa-print"></i> Yazıcı Bağlantı Ayarları
                             </h2>
-                            <p className="text-sm text-gray-500 mb-5">Termal fiş yazıcınızla doğrudan bağlantı kurar. QZ Tray uygulamasının bilgisayarda yüklü ve çalışıyor olması gerekir.</p>
+                            <p className="text-sm text-gray-500 mb-6">Restoranınızdaki termal fiş yazıcılarına nasıl bağlanacağını seçin.</p>
 
-                            {/* Baglanma Durumu */}
-                            <div className="flex flex-col mb-5">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                                        qzStatus === 'connected' ? 'bg-green-500 animate-pulse' :
-                                        qzStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
-                                        qzStatus === 'error' ? 'bg-red-500' : 'bg-gray-300'
-                                    }`}></div>
-                                    <span className={`font-bold text-sm ${
-                                        qzStatus === 'connected' ? 'text-green-600' :
-                                        qzStatus === 'connecting' ? 'text-yellow-600' :
-                                        qzStatus === 'error' ? 'text-red-600' : 'text-gray-500'
-                                    }`}>
-                                        {qzStatus === 'connected' ? 'Bağlandı ✓' :
-                                         qzStatus === 'connecting' ? 'Bağlanıyor...' :
-                                         qzStatus === 'error' ? 'Bağlantı Hatası — QZ Tray açık mı?' : 'Bağlı Değil'}
-                                    </span>
-                                    {qzStatus !== 'connected' && qzStatus !== 'connecting' && (
-                                        <button
-                                            onClick={connectQZ}
-                                            className="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-1.5 rounded-lg transition-colors"
-                                        >
-                                            <i className="fa-solid fa-plug mr-1"></i> Bağlan
-                                        </button>
-                                    )}
-                                    {qzStatus === 'connected' && (
-                                        <button
-                                            onClick={disconnectQZ}
-                                            className="ml-auto bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold px-4 py-1.5 rounded-lg transition-colors"
-                                        >
-                                            Bağlantıyı Kes
-                                        </button>
-                                    )}
-                                    {qzStatus === 'error' && qzErrorMsg && (
-                                    <div className="bg-red-50 border border-red-200 rounded-lg p-2.5 text-xs text-red-800 mt-3">
-                                        <b>Hata Detayı:</b> {qzErrorMsg}
-                                    </div>
-                                )}
-                            </div>
-                                {qzStatus === 'connecting' && (
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 text-xs text-yellow-800 mt-3 flex items-start gap-2">
-                                        <i className="fa-solid fa-bell text-yellow-600 mt-0.5 flex-shrink-0"></i>
-                                        <span>
-                                            <b>Önemli:</b> Windows görev çubuğunda (ekranın alt kısmında veya arka planda) QZ Tray'in güvenlik/onay penceresi açılmış olabilir. Lütfen yanıp sönen QZ Tray simgesine tıklayıp <b>"Allow" (İzin Ver)</b> butonuna basın.
-                                        </span>
-                                    </div>
-                                )}
+                            {/* Yöntem Seçimi Tabs */}
+                            <div className="flex flex-wrap gap-3 mb-6 border-b pb-4">
+                                <button
+                                    onClick={() => {
+                                        setPrintMethod('serial');
+                                        localStorage.setItem('preferred_print_method', 'serial');
+                                    }}
+                                    className={`px-4 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${
+                                        printMethod === 'serial'
+                                            ? 'bg-brand-red text-white shadow-md'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    <i className="fa-solid fa-plug-circle-bolt"></i>
+                                    Web Serial API (Sıfır Kurulum & Sertifikasız)
+                                    <span className="bg-yellow-400 text-black text-[10px] px-1.5 py-0.5 rounded font-black ml-1">ÖNERİLEN</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setPrintMethod('qz');
+                                        localStorage.setItem('preferred_print_method', 'qz');
+                                    }}
+                                    className={`px-4 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${
+                                        printMethod === 'qz'
+                                            ? 'bg-brand-red text-white shadow-md'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    <i className="fa-solid fa-desktop"></i>
+                                    QZ Tray Uygulaması ile
+                                </button>
                             </div>
 
-                            <div className="flex flex-col gap-4">
-                                {/* İşletme Adı */}
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-sm font-bold text-gray-700">İşletme Adı (Fiş başlığı)</label>
-                                    <input
-                                        type="text"
-                                        value={businessName}
-                                        onChange={(e) => {
-                                            setBusinessName(e.target.value);
-                                            localStorage.setItem('qz_business', e.target.value);
-                                        }}
-                                        placeholder="SB Aspava"
-                                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-red"
-                                    />
-                                </div>
+                            {/* İşletme Adı (Ortak) */}
+                            <div className="flex flex-col gap-1 mb-6 bg-gray-50 p-4 rounded-lg border">
+                                <label className="text-sm font-bold text-gray-700">İşletme Adı (Fiş en üst başlığı)</label>
+                                <input
+                                    type="text"
+                                    value={businessName}
+                                    onChange={(e) => {
+                                        setBusinessName(e.target.value);
+                                        localStorage.setItem('qz_business', e.target.value);
+                                    }}
+                                    placeholder="SB Aspava"
+                                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-red bg-white max-w-md"
+                                />
+                            </div>
 
-                                {/* Yazıcı Seçimi */}
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-sm font-bold text-gray-700">Yazıcı</label>
-                                        {qzStatus === 'connected' && (
-                                            <button
-                                                onClick={() => fetchPrinters(qzRef.current || (window as any).qz)}
-                                                className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
+                            {/* WEB SERIAL TAB CONTENT */}
+                            {printMethod === 'serial' && (
+                                <div className="space-y-5 animate-fadeIn">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900">
+                                        <b className="flex items-center gap-1.5 text-blue-800 mb-1">
+                                            <i className="fa-solid fa-circle-info"></i> Nasıl Çalışır?
+                                        </b>
+                                        Bilgisayarınıza hiçbir aracı program (QZ Tray, JSPrintManager vb.) veya sertifika yüklemenize gerek yoktur. Google Chrome veya Edge tarayıcınız doğrudan USB / COM portuna bağlı POS yazıcınızla haberleşir.
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center justify-between gap-4 bg-gray-50 p-4 rounded-xl border">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-3.5 h-3.5 rounded-full flex-shrink-0 ${
+                                                serialStatus === 'connected' ? 'bg-green-500 animate-pulse' :
+                                                serialStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+                                                serialStatus === 'error' ? 'bg-red-500' : 'bg-gray-300'
+                                            }`}></div>
+                                            <div>
+                                                <div className="font-bold text-sm text-gray-800">
+                                                    {serialStatus === 'connected' ? 'USB / COM Yazıcı Bağlandı ✓' :
+                                                     serialStatus === 'connecting' ? 'Bağlanıyor...' :
+                                                     serialStatus === 'error' ? 'Bağlantı Hatası' : 'Yazıcı Bağlı Değil'}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {serialStatus === 'connected' ? 'Adisyonlar doğrudan tarayıcıdan yazdırılacak.' : 'Yazıcınızı bağlamak için butona basın.'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            {serialStatus !== 'connected' && serialStatus !== 'connecting' ? (
+                                                <button
+                                                    onClick={connectSerialPort}
+                                                    className="bg-brand-red hover:bg-brand-dark text-white text-sm font-bold px-5 py-2.5 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                                                >
+                                                    <i className="fa-solid fa-plug"></i> USB / COM Yazıcıya Bağlan
+                                                </button>
+                                            ) : serialStatus === 'connected' ? (
+                                                <button
+                                                    onClick={disconnectSerialPort}
+                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold px-4 py-2 rounded-lg transition-colors"
+                                                >
+                                                    Bağlantıyı Kes
+                                                </button>
+                                            ) : null}
+                                        </div>
+                                    </div>
+
+                                    {serialStatus === 'error' && serialErrorMsg && (
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800">
+                                            <b>Hata:</b> {serialErrorMsg}
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-xs font-bold text-gray-600">Yazıcı Bağlantı Hızı (Baud Rate)</label>
+                                            <select
+                                                value={serialBaudRate}
+                                                onChange={(e) => setSerialBaudRate(Number(e.target.value))}
+                                                className="border border-gray-300 rounded-lg px-3 py-2 text-xs bg-white font-medium focus:outline-none focus:border-brand-red"
                                             >
-                                                <i className="fa-solid fa-rotate-right text-xs"></i> Listeyi Yenile
+                                                <option value={9600}>9600 (Standart POS Yazıcılar)</option>
+                                                <option value={19200}>19200</option>
+                                                <option value={38400}>38400</option>
+                                                <option value={115200}>115200 (Yüksek Hız)</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="mt-4">
+                                            <button
+                                                onClick={() => printWithQZTray('TEST', [{name: 'Test Ürünü (Web Serial)', price: 25, qty: 2}], 'TEST', 'Web Serial test fişi')}
+                                                disabled={serialStatus !== 'connected'}
+                                                className="bg-gray-800 hover:bg-gray-900 text-white text-sm font-bold px-5 py-2.5 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-2 shadow-sm"
+                                            >
+                                                <i className="fa-solid fa-receipt"></i> Test Fişi Yazdır (Web Serial)
                                             </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* QZ TRAY TAB CONTENT */}
+                            {printMethod === 'qz' && (
+                                <div className="space-y-5 animate-fadeIn">
+                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900">
+                                        <b>Not:</b> QZ Tray uygulamasının bilgisayarda yüklü, çalışıyor ve sertifika izninin verilmiş olması gerekir.
+                                    </div>
+
+                                    {/* Baglanma Durumu */}
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border">
+                                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                                                qzStatus === 'connected' ? 'bg-green-500 animate-pulse' :
+                                                qzStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+                                                qzStatus === 'error' ? 'bg-red-500' : 'bg-gray-300'
+                                            }`}></div>
+                                            <span className={`font-bold text-sm ${
+                                                qzStatus === 'connected' ? 'text-green-600' :
+                                                qzStatus === 'connecting' ? 'text-yellow-600' :
+                                                qzStatus === 'error' ? 'text-red-600' : 'text-gray-500'
+                                            }`}>
+                                                {qzStatus === 'connected' ? 'QZ Tray Bağlandı ✓' :
+                                                 qzStatus === 'connecting' ? 'Bağlanıyor...' :
+                                                 qzStatus === 'error' ? 'Bağlantı Hatası — QZ Tray açık mı?' : 'Bağlı Değil'}
+                                            </span>
+                                            {qzStatus !== 'connected' && qzStatus !== 'connecting' && (
+                                                <button
+                                                    onClick={connectQZ}
+                                                    className="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-1.5 rounded-lg transition-colors"
+                                                >
+                                                    <i className="fa-solid fa-plug mr-1"></i> Bağlan
+                                                </button>
+                                            )}
+                                            {qzStatus === 'connected' && (
+                                                <button
+                                                    onClick={disconnectQZ}
+                                                    className="ml-auto bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-bold px-4 py-1.5 rounded-lg transition-colors"
+                                                >
+                                                    Bağlantıyı Kes
+                                                </button>
+                                            )}
+                                        </div>
+                                        {qzStatus === 'error' && qzErrorMsg && (
+                                            <div className="bg-red-50 border border-red-200 rounded-lg p-2.5 text-xs text-red-800 mt-3">
+                                                <b>Hata Detayı:</b> {qzErrorMsg}
+                                            </div>
+                                        )}
+                                        {qzStatus === 'connecting' && (
+                                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 text-xs text-yellow-800 mt-3 flex items-start gap-2">
+                                                <i className="fa-solid fa-bell text-yellow-600 mt-0.5 flex-shrink-0"></i>
+                                                <span>
+                                                    <b>Önemli:</b> Windows görev çubuğunda QZ Tray'in onay penceresi açılmış olabilir. Lütfen yanıp sönen QZ Tray simgesine tıklayıp <b>"Allow"</b> butonuna basın.
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
-                                    {qzStatus === 'connected' && qzPrinters.length > 0 ? (
-                                        <select
-                                            value={selectedPrinter}
-                                            onChange={(e) => {
-                                                setSelectedPrinter(e.target.value);
-                                                localStorage.setItem('qz_printer', e.target.value);
-                                            }}
-                                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-red"
-                                        >
-                                            {qzPrinters.map(p => (
-                                                <option key={p} value={p}>{p}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <input
-                                            type="text"
-                                            value={selectedPrinter}
-                                            onChange={(e) => {
-                                                setSelectedPrinter(e.target.value);
-                                                localStorage.setItem('qz_printer', e.target.value);
-                                            }}
-                                            placeholder={qzStatus === 'connected' ? 'Yazıcı adını elle girin (örn: Microsoft Print to PDF)' : 'Önce QZ Tray\'e bağlanın'}
-                                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-red"
-                                        />
-                                    )}
-                                    {qzStatus === 'connected' && qzPrinters.length === 0 && (
-                                        <p className="text-xs text-orange-600 font-medium">
-                                            <i className="fa-solid fa-triangle-exclamation mr-1"></i>
-                                            Yazıcı listesi alınamadı. "Listeyi Yenile"ye basın veya yazıcı adını elle girin.
-                                        </p>
-                                    )}
-                                </div>
 
-                                {/* Test Fişi ve Sertifika İndirme */}
-                                <div className="flex flex-wrap gap-3 mt-2">
-                                    <button
-                                        onClick={() => printWithQZTray('TEST', [{name: 'Test Ürünü', price: 25, qty: 2}], 'TEST', 'QZ Tray test fişi')}
-                                        disabled={qzStatus !== 'connected' || !selectedPrinter}
-                                        className="bg-gray-800 hover:bg-gray-900 text-white text-sm font-bold px-5 py-2 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-2"
-                                    >
-                                        <i className="fa-solid fa-receipt"></i> Test Fişi Yazdır
-                                    </button>
-                                    <a
-                                        href="/sbaspava-qz.crt"
-                                        download="sbaspava-qz.crt"
-                                        className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
-                                    >
-                                        <i className="fa-solid fa-shield-halved"></i> Sertifikayı İndir (.crt)
-                                    </a>
-                                </div>
-                                {qzStatus !== 'connected' && (
-                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                                        <b>QZ Tray kurulu değil mi?</b> <a href="https://qz.io/download/" target="_blank" rel="noreferrer" className="underline font-bold">qz.io/download</a> adresinden indirip kurun.
+                                    {/* Yazıcı Seçimi */}
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-sm font-bold text-gray-700">Yazıcı</label>
+                                            {qzStatus === 'connected' && (
+                                                <button
+                                                    onClick={() => fetchPrinters(qzRef.current || (window as any).qz)}
+                                                    className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
+                                                >
+                                                    <i className="fa-solid fa-rotate-right text-xs"></i> Listeyi Yenile
+                                                </button>
+                                            )}
+                                        </div>
+                                        {qzStatus === 'connected' && qzPrinters.length > 0 ? (
+                                            <select
+                                                value={selectedPrinter}
+                                                onChange={(e) => {
+                                                    setSelectedPrinter(e.target.value);
+                                                    localStorage.setItem('qz_printer', e.target.value);
+                                                }}
+                                                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-red"
+                                            >
+                                                {qzPrinters.map(p => (
+                                                    <option key={p} value={p}>{p}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={selectedPrinter}
+                                                onChange={(e) => {
+                                                    setSelectedPrinter(e.target.value);
+                                                    localStorage.setItem('qz_printer', e.target.value);
+                                                }}
+                                                placeholder={qzStatus === 'connected' ? 'Yazıcı adını elle girin' : 'Önce QZ Tray\'e bağlanın'}
+                                                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-red"
+                                            />
+                                        )}
+                                        {qzStatus === 'connected' && qzPrinters.length === 0 && (
+                                            <p className="text-xs text-orange-600 font-medium">
+                                                <i className="fa-solid fa-triangle-exclamation mr-1"></i>
+                                                Yazıcı listesi alınamadı. "Listeyi Yenile"ye basın veya yazıcı adını elle girin.
+                                            </p>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+
+                                    {/* Test Fişi ve Sertifika İndirme */}
+                                    <div className="flex flex-wrap gap-3 mt-2">
+                                        <button
+                                            onClick={() => printWithQZTray('TEST', [{name: 'Test Ürünü', price: 25, qty: 2}], 'TEST', 'QZ Tray test fişi')}
+                                            disabled={qzStatus !== 'connected' || !selectedPrinter}
+                                            className="bg-gray-800 hover:bg-gray-900 text-white text-sm font-bold px-5 py-2 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-2"
+                                        >
+                                            <i className="fa-solid fa-receipt"></i> Test Fişi Yazdır (QZ Tray)
+                                        </button>
+                                        <a
+                                            href="/sbaspava-qz.crt"
+                                            download="sbaspava-qz.crt"
+                                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+                                        >
+                                            <i className="fa-solid fa-shield-halved"></i> Sertifikayı İndir (.crt)
+                                        </a>
+                                    </div>
+                                    {qzStatus !== 'connected' && (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                                            <b>QZ Tray kurulu değil mi?</b> <a href="https://qz.io/download/" target="_blank" rel="noreferrer" className="underline font-bold">qz.io/download</a> adresinden indirip kurun.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

@@ -98,10 +98,12 @@ export default function Panel() {
                         }
                     }
 
-                    // Otomatik onay açıksa yazdır
+                    // Otomatik onay açıksa yazdır (Sadece müşteriden gelen QR siparişlerini yazdır, admin'in manuel eklediklerini çift yazdırmasın)
                     if (adminData.settings?.autoApprove) {
                         newOrders.forEach(order => {
-                            printWithQZTray(order.tableId, order.items, order.id, order.note);
+                            if (!order.isManual && order.source !== 'admin') {
+                                printWithQZTray(order.tableId, order.items, order.id, order.note);
+                            }
                         });
                     }
                 }

@@ -112,6 +112,8 @@ export async function POST(request: Request) {
                     tableId,
                     items,
                     status: 'hazir', // Direct addition by admin implies it's already approved/ready
+                    isManual: true,
+                    source: 'admin',
                     timestamp: new Date().toISOString()
                 };
                 db.tables[tableId].orders.push(newOrder);
